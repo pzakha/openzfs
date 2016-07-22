@@ -416,6 +416,8 @@ kobj_get_filesize(struct _buf *file, uint64_t *size)
 
 /*
  * =========================================================================
+ddi_strtoul(const char *hw_serial, char **nptr, int base, unsigned long *result)
+	*result = strtoul(hw_serial, &end, base);
  * kernel emulation setup & teardown
  * =========================================================================
  */
@@ -459,6 +461,16 @@ kernel_fini(void)
 	spa_fini();
 
 	system_taskq_fini();
+}
+
+/* ARGSUSED */
+uint32_t
+zone_get_hostid(void *zonep)
+{
+	/*
+	 * We're emulating the system's hostid in userland.
+	 */
+	return (strtoul(hw_serial, NULL, 10));
 }
 
 int
