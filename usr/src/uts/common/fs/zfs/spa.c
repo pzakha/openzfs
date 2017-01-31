@@ -1948,13 +1948,13 @@ spa_load_verify(spa_t *spa)
 {
 	zio_t *rio;
 	spa_load_error_t sle = { 0 };
-	zpool_rewind_policy_t policy;
+	zpool_load_policy_t policy;
 	boolean_t verify_ok = B_FALSE;
 	int error = 0;
 
-	zpool_get_rewind_policy(spa->spa_config, &policy);
+	zpool_get_load_policy(spa->spa_config, &policy);
 
-	if (policy.zrp_request & ZPOOL_NEVER_REWIND)
+	if (policy.zlp_rewind & ZPOOL_NEVER_REWIND)
 		return (0);
 
 	dsl_pool_config_enter(spa->spa_dsl_pool, FTAG);
@@ -1979,8 +1979,8 @@ spa_load_verify(spa_t *spa)
 	spa->spa_load_meta_errors = sle.sle_meta_count;
 	spa->spa_load_data_errors = sle.sle_data_count;
 
-	if (!error && sle.sle_meta_count <= policy.zrp_maxmeta &&
-	    sle.sle_data_count <= policy.zrp_maxdata) {
+	if (!error && sle.sle_meta_count <= policy.zlp_maxmeta &&
+	    sle.sle_data_count <= policy.zlp_maxdata) {
 		int64_t loss = 0;
 
 		verify_ok = B_TRUE;
@@ -3079,11 +3079,11 @@ spa_open_common(const char *pool, spa_t **spapp, void *tag, nvlist_t *nvpolicy,
 	}
 
 	if (spa->spa_state == POOL_STATE_UNINITIALIZED) {
-		zpool_rewind_policy_t policy;
+		zpool_load_policy_t policy;
 
-		zpool_get_rewind_policy(nvpolicy ? nvpolicy : spa->spa_config,
+		zpool_get_load_policy(nvpolicy ? nvpolicy : spa->spa_config,
 		    &policy);
-		if (policy.zrp_request & ZPOOL_DO_REWIND)
+		if (policy.zlp_rewind & ZPOOL_DO_REWIND)
 			state = SPA_LOAD_RECOVER;
 
 		spa_activate(spa, spa_mode_global);
@@ -3091,8 +3091,8 @@ spa_open_common(const char *pool, spa_t **spapp, void *tag, nvlist_t *nvpolicy,
 		if (state != SPA_LOAD_RECOVER)
 			spa->spa_last_ubsync_txg = spa->spa_load_txg = 0;
 
-		error = spa_load_best(spa, state, B_FALSE, policy.zrp_txg,
-		    policy.zrp_request);
+		error = spa_load_best(spa, state, policy.zlp_txg,
+		    policy.zlp_rewind);
 
 		if (error == EBADF) {
 			/*
@@ -4051,7 +4051,7 @@ spa_import(const char *pool, nvlist_t *config, nvlist_t *props, uint64_t flags)
 	spa_t *spa;
 	char *altroot = NULL;
 	spa_load_state_t state = SPA_LOAD_IMPORT;
-	zpool_rewind_policy_t policy;
+	zpool_load_policy_t policy;
 	uint64_t mode = spa_mode_global;
 	uint64_t readonly = B_FALSE;
 	int error;
@@ -4102,8 +4102,8 @@ spa_import(const char *pool, nvlist_t *config, nvlist_t *props, uint64_t flags)
 	 */
 	spa_async_suspend(spa);
 
-	zpool_get_rewind_policy(config, &policy);
-	if (policy.zrp_request & ZPOOL_DO_REWIND)
+	zpool_get_load_policy(config, &policy);
+	if (policy.zlp_rewind & ZPOOL_DO_REWIND)
 		state = SPA_LOAD_RECOVER;
 
 	/*
