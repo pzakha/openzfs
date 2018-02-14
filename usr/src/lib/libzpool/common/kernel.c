@@ -467,6 +467,8 @@ zone_get_hostid(void *zonep)
 {
 	/*
 	 * We're emulating the system's hostid in userland.
+	 * Note that in order to allow read-only libzpool consumers to import
+	 * any pool, we override hostid to 0 in kernel_init().
 	 */
 	return (strtoul(hw_serial, NULL, 10));
 }
